@@ -269,6 +269,15 @@ public class AioHttpServer {
 思考2：read数据之前，先分配缓冲区，这样有什么缺点
 > 预分配缓冲区大小，需要按照最大请求的输入Body-size进行分配，所以对于一个Body比较小的请求，相当于资源浪费。
 
+追加思考：如果预分配的缓冲区大小不足以接收channel中的所有数据，怎么办？
+> 数据在Channel中是顺序读取的，如果接收数据的Buffer空间，小于Channel中实际的数据内容，比如，现在Channel中有4个字节[a,b,c,d]，但现在接受缓冲区数据的Buffer大小只有3个字节。
+此时，只会读取前Channel中的前三个字节[a,b,c]到Buffer中，剩余的一个字节[d]仍留在Channel中，如果继续从Channel中读数据，可以将第四个字节读出来。
+由此我们可以看出：
+java.nio.channels.AsynchronousSocketChannel#read(java.nio.ByteBuffer, A, java.nio.channels.CompletionHandler<java.lang.Integer,? super A>)
+这个方法，以下两种情况满足任意一种都会认为数据读取完成，从而回调completed方法：
+1.channel中的所有数据都已经读到Buffer中。
+2.Buffer的可用空间已经被填满。
+
 思考3：System.in.read(); 这行代码的必要性
 > 因为异步代码执行完成之后，线程就退出了，随之应用程序退出。
 所以需要加上一行，主线程等待系统输入，避免程序退出。
@@ -304,3 +313,6 @@ IBM讲NIO的Buffer比较详细
 
 美团技术博客讲NIO的
 [Java NIO浅析](https://tech.meituan.com/2016/11/04/nio.html)
+
+AIO讲解
+[在 Java 7 中体会 NIO.2 异步执行的快乐](https://www.ibm.com/developerworks/cn/java/j-lo-nio2/index.html)

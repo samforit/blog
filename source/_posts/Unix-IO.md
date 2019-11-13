@@ -75,3 +75,10 @@ epoll是callback的模式，当文件句柄准备好了之后，直接进行回�
 > 在Windows系统下，通过IOCP实现。
 在Linux系统下，没有，因为Linux系统下的AIO底层仍是epoll。
 （个人猜测，这也是为什么Netty使用了NIO，而没有使用AIO）
+
+# 他山之石
+以对话的形式讲述，比较易于理解
+[漫话：如何给女朋友解释什么是Linux的五种IO模型？](https://mp.weixin.qq.com/s?__biz=Mzg3MjA4MTExMw==&mid=2247484746&idx=1&sn=c0a7f9129d780786cabfcac0a8aa6bb7&source=41#wechat_redirect)
+
+数据的内核态，用户态，这篇文章也有讲到，同时介绍了高效的数据传输方式：zero-copy
+[zero-copy](https://blog.csdn.net/u013256816/article/details/52589524)
