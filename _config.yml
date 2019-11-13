@@ -8,7 +8,7 @@ subtitle: 'Sam的一亩三分地'
 description: '我买了一辆自行车，除了铃铛不响，其他周身都在响'
 keywords:
 author: samforit
-language: zh-Hans
+language: zh-cn
 timezone: ''
 
 # URL
@@ -104,3 +104,7 @@ search:
   field: post
   format: html
   limit: 10000
+
+# sitemap
+sitemap:
+  path: sitemap.xml
