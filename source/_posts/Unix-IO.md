@@ -68,14 +68,18 @@ Java的IO模型与Unix的IO模型的对应关系如下所示（这个对应关�
 前面的四种IO模型【阻塞IO、非阻塞IO、IO多路复用、信号驱动IO】，都属于同步IO，只有最后一种模型是真正的异步【异步IO】
 
 # 系统调用介绍
-1.Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？
-> 因为select是轮询的模式，不停的检查文件句柄的状态。
+{% note warning %}
+### 1.Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？
+因为select是轮询的模式，不停的检查文件句柄的状态。
 epoll是callback的模式，当文件句柄准备好了之后，直接进行回调，更高效。
+{% endnote %}
 
-2.Java有真正的AIO模式吗？
-> 在Windows系统下，通过IOCP实现。
+{% note warning %}
+### 2.Java有真正的AIO模式吗？
+在Windows系统下，通过IOCP实现。
 在Linux系统下，没有，因为Linux系统下的AIO底层仍是epoll。
 （个人猜测，这也是为什么Netty使用了NIO，而没有使用AIO）
+{% endnote %}
 
 # 他山之石
 以对话的形式讲述，比较易于理解

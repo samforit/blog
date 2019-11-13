@@ -73,9 +73,8 @@ public class BioHttpServer {
 ```
 {% note info %}
 ##### 思考一，shutdownInput，shutdownOutput 的作用是什么？
-> 因为socket是双向的，需要先关闭输入流，告诉客户端，我不再接收数据，然后关闭输出流，表示我的数据已经发送完毕。
+因为socket是双向的，需要先关闭输入流，告诉客户端，我不再接收数据，然后关闭输出流，表示我的数据已经发送完毕。
 详细信息可以参考如下[【Java TCP/IP Socket】 — close()/shutdownOutput()/shutdownInput() 分析](https://blog.csdn.net/dabing69221/article/details/17351881)
-
 {% endnote %}
 
 ## NIO版本HttpServer
@@ -150,7 +149,7 @@ public class NioHttpServer {
 ```
 {% note info %}
 ##### 思考1：阻塞和同步是一个概念吗？非阻塞=异步？
-> 这种概念性的问题没必要太关注，有点像回字有多少种写法，关键的还是要能够理解IO模型的原理。
+这种概念性的问题没必要太关注，有点像回字有多少种写法，关键的还是要能够理解IO模型的原理。
 这里只是简单提一下。通过[Unix的五种IO模型介绍](https://samforit.github.io/blog/2019/11/02/Unix-IO/) 我们可以知道：
 1.BIO是阻塞式IO，是同步IO，这点是没有异议的
 2.NIO可以设置两种模式：阻塞模式（Unix多路复用IO）和非阻塞模式（Unix非阻塞IO），但数据从内核态加载为用户态的这个过程，是同步的，所以NIO也是同步的。
@@ -158,24 +157,21 @@ public class NioHttpServer {
 综上：
 非阻塞，对于底层Unix-IO模型，都是指数据从磁盘加载到内核态的这个过程，是否阻塞。
 异步是指整个IO操作（包含了两步：数据在内核态准备完成，数据从内核态转变为用户态）完成之后，系统通知应用程序（通过signal或callback）。
-
 {% endnote %}
 
 
 {% note info %}
 ##### 思考2：为什么从buffer读数据要先进行flip操作
-> buffer底层就是一个数组，我们需要当写数据的时候我们需要记录从何处开始写（position），以及数组的最大容量（capacity）。
+buffer底层就是一个数组，我们需要当写数据的时候我们需要记录从何处开始写（position），以及数组的最大容量（capacity）。
 当我们读数据的时候，需要知道当前数组有多少个元素可读（limit），以及记录当前已经读到了哪个位置（position）。
 所以当读写模式转换的时候，我们就需要对buffer进行flip（写转读），clear（读转写）操作。详见【NIO Buffer】章节
 以上只是一般性操作，不代表所有应用场景。
-
 {% endnote %}
 
 
 {% note info %}
 ##### 思考3：为什么向buffer写数据要先进行clear操作(新建的buffer不需要)
-> 同思考2
-
+同思考2
 {% endnote %}
 
 ### NIO Channel
@@ -206,9 +202,8 @@ Selector基于操作系统底层的epoll，一个Selector可以同时监听多�
 
 {% note danger %}
 ### 为什么使用NIO
-> NIO 的创建目的是为了让 Java 程序员可以实现高速 I/O 而无需编写自定义的本机代码。NIO 将最耗时的 I/O 操作(即填充和提取缓冲区)转移回操作系统，因而可以极大地提高速度。
+NIO 的创建目的是为了让 Java 程序员可以实现高速 I/O 而无需编写自定义的本机代码。NIO 将最耗时的 I/O 操作(即填充和提取缓冲区)转移回操作系统，因而可以极大地提高速度。
 NIO的出现，使得当IO未就绪时，线程可以不挂起，继续处理其他事情。一个线程也不必局限于只为一个IO连接服务。
-
 {% endnote %}
 
 BIO与NIO的线程模型对比：
@@ -281,19 +276,17 @@ public class AioHttpServer {
 ```
 {% note info %}
 ##### 思考1：accept again，why？
-> 因为AIO是异步模型，当接收到请求之后，当前线程就退出了，所以当接收到请求之后，需要再次注册服务端的accept操作。
-
+因为AIO是异步模型，当接收到请求之后，当前线程就退出了，所以当接收到请求之后，需要再次注册服务端的accept操作。
 {% endnote %}
 
 {% note info %}
 ##### 思考2：read数据之前，先分配缓冲区，这样有什么缺点
-> 预分配缓冲区大小，需要按照最大请求的输入Body-size进行分配，所以对于一个Body比较小的请求，相当于资源浪费。
-
+预分配缓冲区大小，需要按照最大请求的输入Body-size进行分配，所以对于一个Body比较小的请求，相当于资源浪费。
 {% endnote %}
 
 {% note info %}
 ##### 追加思考：如果预分配的缓冲区大小不足以接收channel中的所有数据，怎么办？
-> 数据在Channel中是顺序读取的，如果接收数据的Buffer空间，小于Channel中实际的数据内容，比如，现在Channel中有4个字节[a,b,c,d]，但现在接受缓冲区数据的Buffer大小只有3个字节。
+数据在Channel中是顺序读取的，如果接收数据的Buffer空间，小于Channel中实际的数据内容，比如，现在Channel中有4个字节[a,b,c,d]，但现在接受缓冲区数据的Buffer大小只有3个字节。
 此时，只会读取前Channel中的前三个字节[a,b,c]到Buffer中，剩余的一个字节[d]仍留在Channel中，如果继续从Channel中读数据，可以将第四个字节读出来。
 最后：如果Channel中有数据未读取，当Channel关闭的时候，里面的数据就被丢弃了。
 由此我们可以看出：
@@ -301,22 +294,19 @@ java.nio.channels.AsynchronousSocketChannel#read(java.nio.ByteBuffer, A, java.ni
 这个方法，以下两种情况满足任意一种都会认为数据读取完成，从而回调completed方法：
 1.channel中的所有数据都已经读到Buffer中。
 2.Buffer的可用空间已经被填满。
-
 {% endnote %}
 
 {% note info %}
 ##### 思考3：System.in.read(); 这行代码的必要性
-> 因为异步代码执行完成之后，线程就退出了，随之应用程序退出。
+因为异步代码执行完成之后，线程就退出了，随之应用程序退出。
 所以需要加上一行，主线程等待系统输入，避免程序退出。
-
 {% endnote %}
 
 
 {% note info %}
 ##### AIO看起来比NIO更高效，为什么Netty使用NIO而不是AIO？
-> 1.服务器大多是Linux系统，AIO的底层实现仍使用EPOLL，没有很好实现AIO，因此在性能上没有明显的优势。
+1.服务器大多是Linux系统，AIO的底层实现仍使用EPOLL，没有很好实现AIO，因此在性能上没有明显的优势。
 2.AIO接收数据的时候需要预先分配缓冲区大小, 而不是NIO那种需要接收时才需要分配缓存, 所以对连接数量非常大但流量小的情况, 会造成内存浪费
-
 {% endnote %}
 
 ## 以上代码中用到的工具类

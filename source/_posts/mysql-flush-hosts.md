@@ -1,6 +1,6 @@
 ---
 title: mysql blocked because of many connection errors
-date: 2019-11-09 14:49:46
+date: 2019-11-01 14:49:46
 categories:
     - Mysql
 tags:
