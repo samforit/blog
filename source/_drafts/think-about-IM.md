@@ -1,5 +1,5 @@
 ---
-title: 关于IM（即时通信）的一点思考
+title: 即时通信场景下的消息可靠性，以及高并发思考
 categories:
 tags:
 ---
