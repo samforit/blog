@@ -1,11 +1,11 @@
 ---
 title: 使用crond构建linux定时任务及日志查看
-date: 2019-11-01 14:52:59
 categories:
     - Linux
 tags:
     - crond
     - Linux
+date: 2018-03-02 00:00:00
 ---
 
 

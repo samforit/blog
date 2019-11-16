@@ -1,5 +1,0 @@
----
-title: hadoop
-categories:
-tags:
----

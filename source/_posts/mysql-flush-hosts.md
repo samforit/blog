@@ -1,11 +1,11 @@
 ---
 title: mysql blocked because of many connection errors
-date: 2019-11-01 14:49:46
 categories:
     - Mysql
 tags:
     - 异常
     - sql
+date: 2018-03-06 00:00:00
 ---
 
 

@@ -1,14 +1,13 @@
 ---
 title: Java-IO(上) BIO、NIO、AIO介绍
-date: 2019-11-02 14:44:45
 categories:
-    - [IO, Java-IO]
-    - [Java]
+  - - IO
+    - Java
 tags:
     - IO
     - Java
+date: 2019-10-12 20:00:43
 ---
-
 
 # 在开始之前
 ## 这个系列的概要

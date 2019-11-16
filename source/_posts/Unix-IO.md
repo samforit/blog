@@ -1,11 +1,11 @@
 ---
 title: Unix的五种IO模型介绍
-date: 2019-11-02 14:44:53
 categories:
-    - [IO, Unix-IO]
+    - [IO,Linux]
 tags:
     - IO
     - Unix
+date: 2019-10-11 20:00:45
 ---
 
 
