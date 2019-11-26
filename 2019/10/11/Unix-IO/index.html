@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="b_0mBmwqCie592u0n7rs3m3-xIrzk4bdTPkxtfkAHk4">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Pisces',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":null},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="前言之前打算总结一下Java的BIO（IO），AIO，NIO，最后一步步深入，发现Unix（Linux）的IO模型需要提前掌握，所以先总结一下Unix的IO模型。">
+<meta name="keywords" content="IO,Unix">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unix的五种IO模型介绍">
+<meta property="og:url" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;bloghe&#x2F;2019&#x2F;10&#x2F;11&#x2F;Unix-IO&#x2F;">
+<meta property="og:site_name" content="三木">
+<meta property="og:description" content="前言之前打算总结一下Java的BIO（IO），AIO，NIO，最后一步步深入，发现Unix（Linux）的IO模型需要提前掌握，所以先总结一下Unix的IO模型。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2019&#x2F;10&#x2F;11&#x2F;Unix-IO&#x2F;linux-kernal-user.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2019&#x2F;10&#x2F;11&#x2F;Unix-IO&#x2F;5-AIO.jpg">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2019&#x2F;10&#x2F;11&#x2F;Unix-IO&#x2F;6-IO.jpg">
+<meta property="og:updated_time" content="2019-11-26T08:24:38.501Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2019&#x2F;10&#x2F;11&#x2F;Unix-IO&#x2F;linux-kernal-user.png">
+
+<link rel="canonical" href="https://samforit.github.io/bloghe/2019/10/11/Unix-IO/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Unix的五种IO模型介绍 | 三木</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?f5aa3900758b56175a8ff0efb075e4bd";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">三木</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Sam的一亩三分地</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/blog/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://samforit.github.io/bloghe/blog/2019/10/11/Unix-IO/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/sam_images/avatar.jpg">
+      <meta itemprop="name" content="samforit">
+      <meta itemprop="description" content="我买了一辆自行车，除了铃铛不响，其他周身都在响">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三木">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Unix的五种IO模型介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-11 20:00:45" itemprop="dateCreated datePublished" datetime="2019-10-11T20:00:45+08:00">2019-10-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/IO/" itemprop="url" rel="index">
+                    <span itemprop="name">IO</span>
+                  </a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/IO/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span id="/blog/2019/10/11/Unix-IO/" class="post-meta-item leancloud_visitors" data-flag-title="Unix的五种IO模型介绍" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/blog/2019/10/11/Unix-IO/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/blog/2019/10/11/Unix-IO/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>之前打算总结一下Java的<strong>BIO（IO），AIO，NIO</strong>，最后一步步深入，发现Unix（Linux）的IO模型需要提前掌握，所以先总结一下Unix的IO模型。</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="Java-IO-与-Unix-IO-的关系（非严格对应）"><a href="#Java-IO-与-Unix-IO-的关系（非严格对应）" class="headerlink" title="Java IO 与 Unix IO 的关系（非严格对应）"></a>Java IO 与 Unix IO 的关系（非严格对应）</h2><p>Unix网络编程中介绍了五种IO模型，分别是：阻塞IO、非阻塞IO、IO多路复用、信号驱动IO、异步IO。<br>Java的IO模型与Unix的IO模型的对应关系如下所示（这个对应关系并不严格）：</p>
+<table>
+<thead>
+<tr>
+<th>Java-IO模型</th>
+<th>Unix-IO模型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BIO</td>
+<td>阻塞式IO</td>
+</tr>
+<tr>
+<td>NIO</td>
+<td>IO多路复用</td>
+</tr>
+<tr>
+<td>AIO</td>
+<td>异步IO</td>
+</tr>
+</tbody></table>
+<h2 id="数据的内核态和用户态"><a href="#数据的内核态和用户态" class="headerlink" title="数据的内核态和用户态"></a>数据的内核态和用户态</h2><img src="/blog/2019/10/11/Unix-IO/linux-kernal-user.png" class="" title="数据的内核态和用户态">
+<p>在进行IO模型讲解之前，先讲讲数据的两个状态：内核态和用户态。<br>我们将文件从磁盘加载到内存中。操作系统是怎么做的？<br>第一步：因为我们的所有程序，都是和操作系统的内核进行交互，所以文件首先是从磁盘加载到内核，这时候文件是处于内核态。<br>第二步：文件从内核再加载到内存中，应用程序此时才可以在内存中进行读写操作。这个时候的文件就是内核态。<br>所以Unix的五种IO模型的不同指出，就是这两个步骤的处理流程不同。</p>
+<h1 id="Unix五种IO模型分别介绍"><a href="#Unix五种IO模型分别介绍" class="headerlink" title="Unix五种IO模型分别介绍"></a>Unix五种IO模型分别介绍</h1><h2 id="阻塞式IO"><a href="#阻塞式IO" class="headerlink" title="阻塞式IO"></a>阻塞式IO</h2>
+<p>这种模式很简单，系统给调用<strong>recvfrom</strong>函数之后，线程一直处于等待状态，一直等到：<br>第一步文件加载到内核态完成，第二步文件加载到用户态完成。</p>
+<h2 id="非阻塞IO"><a href="#非阻塞IO" class="headerlink" title="非阻塞IO"></a>非阻塞IO</h2>
+<p>系统不停的通过<strong>recvfrom</strong>进行轮询，一直到第一步完成，然后在第二步阻塞式的将数据从内核态加载到用户态。<br>这里的非阻塞IO模式，主要是指第一步，加载数据到内核态，这个过程是非阻塞的，通过轮询来判断数据是否在内核准备好。</p>
+<h2 id="IO多路复用"><a href="#IO多路复用" class="headerlink" title="IO多路复用"></a>IO多路复用</h2>
+<p>系统首先通过select，阻塞式的查看内核数据是否准备完毕。<br>当内核数据加载完成之后，系统会调用<strong>recvfrom</strong>，将内核态的数据加载到用户态。<br>这里看起来第一步和第二步都是阻塞式操作，但是，select可以在极小代价的情况下，同时处理多个文件句柄（包括socket）。</p>
+<h2 id="信号驱动IO"><a href="#信号驱动IO" class="headerlink" title="信号驱动IO"></a>信号驱动IO</h2>
+<p>第一步，相当于系统注册一个回调函数，当内核数据准备好了之后通知我。<br>此时系统可以做其他的事情，并不需要阻塞式的等待内核数据。<br>第二步，阻塞式调用<strong>recvfrom</strong>，将内核的数据加载到用户态。</p>
+<h2 id="异步IO"><a href="#异步IO" class="headerlink" title="异步IO"></a>异步IO</h2><img src="/blog/2019/10/11/Unix-IO/5-AIO.jpg" class="" title="异步IO图示">
+<p>这个模型在理论上来说，是真正的异步模型，因为在以上四种模型中，在第二步：数据从内核态加载到用户态，都是同步操作。<br>而在该模型中，系统在加载文件的时候，只需要通过aio_read注册一个回调，当文件完成了内核态，用户态的加载之后，通知当前系统。<br>在这个过程中，系统不用等待，可以执行其他的运算任务。</p>
+<h2 id="汇总对比"><a href="#汇总对比" class="headerlink" title="汇总对比"></a>汇总对比</h2><img src="/blog/2019/10/11/Unix-IO/6-IO.jpg" class="" title="IO总览">
+<p>这张图是对以上五种IO模型的汇总比较，总的来说，越靠后的模型在理论上来说就越高效。<br>前面的四种IO模型【阻塞IO、非阻塞IO、IO多路复用、信号驱动IO】，都属于同步IO，只有最后一种模型是真正的异步【异步IO】</p>
+<h1 id="系统调用介绍"><a href="#系统调用介绍" class="headerlink" title="系统调用介绍"></a>系统调用介绍</h1><div class="note warning">
+            <h3 id="1-Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？"><a href="#1-Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？" class="headerlink" title="1.Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？"></a>1.Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？</h3><p>因为select是轮询的模式，不停的检查文件句柄的状态。<br>epoll是callback的模式，当文件句柄准备好了之后，直接进行回调，更高效。</p>
+          </div>
+
+<div class="note warning">
+            <h3 id="2-Java有真正的AIO模式吗？"><a href="#2-Java有真正的AIO模式吗？" class="headerlink" title="2.Java有真正的AIO模式吗？"></a>2.Java有真正的AIO模式吗？</h3><p>在Windows系统下，通过IOCP实现。<br>在Linux系统下，没有，因为Linux系统下的AIO底层仍是epoll。<br>（个人猜测，这也是为什么Netty使用了NIO，而没有使用AIO）</p>
+          </div>
+
+<h1 id="他山之石"><a href="#他山之石" class="headerlink" title="他山之石"></a>他山之石</h1><p>以对话的形式讲述，比较易于理解<br><a href="https://mp.weixin.qq.com/s?__biz=Mzg3MjA4MTExMw==&mid=2247484746&idx=1&sn=c0a7f9129d780786cabfcac0a8aa6bb7&source=41#wechat_redirect" target="_blank" rel="noopener">漫话：如何给女朋友解释什么是Linux的五种IO模型？</a></p>
+<p>数据的内核态，用户态，这篇文章也有讲到，同时介绍了高效的数据传输方式：zero-copy<br><a href="https://blog.csdn.net/u013256816/article/details/52589524" target="_blank" rel="noopener">zero-copy</a></p>
+
+    </div>
+
+    
+    
+    
+      
+        <div class="reward-container">
+  <div>感谢支持!</div>
+  <button disable="enable" onclick="var qr = document.getElementById(&quot;qr&quot;); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/sam_images/weixin.png" alt="samforit 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/sam_images/zhifubao.png" alt="samforit 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/IO/" rel="tag"><i class="fa fa-tag"></i> IO</a>
+              <a href="/blog/tags/Unix/" rel="tag"><i class="fa fa-tag"></i> Unix</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/blog/2018/11/11/javascript-post-form/" rel="next" title="javascript模拟post表单提交">
+                  <i class="fa fa-chevron-left"></i> javascript模拟post表单提交
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/blog/2019/10/12/Java-IO-1/" rel="prev" title="Java-IO(上) BIO、NIO、AIO介绍">
+                  Java-IO(上) BIO、NIO、AIO介绍 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    <div class="comments" id="comments"></div>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">2.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-IO-与-Unix-IO-的关系（非严格对应）"><span class="nav-number">2.1.</span> <span class="nav-text">Java IO 与 Unix IO 的关系（非严格对应）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据的内核态和用户态"><span class="nav-number">2.2.</span> <span class="nav-text">数据的内核态和用户态</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Unix五种IO模型分别介绍"><span class="nav-number">3.</span> <span class="nav-text">Unix五种IO模型分别介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#阻塞式IO"><span class="nav-number">3.1.</span> <span class="nav-text">阻塞式IO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#非阻塞IO"><span class="nav-number">3.2.</span> <span class="nav-text">非阻塞IO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO多路复用"><span class="nav-number">3.3.</span> <span class="nav-text">IO多路复用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#信号驱动IO"><span class="nav-number">3.4.</span> <span class="nav-text">信号驱动IO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异步IO"><span class="nav-number">3.5.</span> <span class="nav-text">异步IO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#汇总对比"><span class="nav-number">3.6.</span> <span class="nav-text">汇总对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#系统调用介绍"><span class="nav-number">4.</span> <span class="nav-text">系统调用介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？"><span class="nav-number">4.0.1.</span> <span class="nav-text">1.Java的NIO老版本使用的是select模式，但后来改成了epoll，为什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Java有真正的AIO模式吗？"><span class="nav-number">4.0.2.</span> <span class="nav-text">2.Java有真正的AIO模式吗？</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#他山之石"><span class="nav-number">5.</span> <span class="nav-text">他山之石</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="samforit"
+    src="/blog/sam_images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">samforit</p>
+  <div class="site-description" itemprop="description">我买了一辆自行车，除了铃铛不响，其他周身都在响</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/samforit" title="GitHub &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;samforit" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/blog/mailto:samforit@gmail.com" title="E-Mail &amp;rarr; mailto:samforit@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">samforit</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+<script src="/blog/js/utils.js"></script><script src="/blog/js/motion.js"></script>
+<script src="/blog/js/schemes/pisces.js"></script>
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="/blog/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      flowchart: { curve: 'linear' },
+      gantt: { axisFormat: '%m/%d/%Y' },
+      sequence: { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+  var GUEST = ['nick', 'mail', 'link'];
+  var guest = 'nick,mail,link';
+  guest = guest.split(',').filter(item => {
+    return GUEST.includes(item);
+  });
+  new Valine({
+    el: '#comments',
+    verify: true,
+    notify: true,
+    appId: 'T134pYlQ9NdPFORjFpC7kkCg-gzGzoHsz',
+    appKey: 'KosMb3SnNNxaNir6UaF3fwx2',
+    placeholder: "请留下您宝贵的意见！",
+    avatar: 'mm',
+    meta: guest,
+    pageSize: '10' || 10,
+    visitor: true,
+    lang: 'zh-cn' || 'zh-cn',
+    path: location.pathname,
+    recordIP: false,
+    serverURLs: ''
+  });
+}, window.Valine);
+</script>
+
+</body>
+</html>
