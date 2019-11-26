@@ -12,6 +12,8 @@ date: 2019-10-11 20:00:45
 # 前言
 之前打算总结一下Java的**BIO（IO），AIO，NIO**，最后一步步深入，发现Unix（Linux）的IO模型需要提前掌握，所以先总结一下Unix的IO模型。
 
+<!-- more -->
+
 # 概述
 ## Java IO 与 Unix IO 的关系（非严格对应）
 Unix网络编程中介绍了五种IO模型，分别是：阻塞IO、非阻塞IO、IO多路复用、信号驱动IO、异步IO。
@@ -22,8 +24,6 @@ Java的IO模型与Unix的IO模型的对应关系如下所示（这个对应关�
 | BIO | 阻塞式IO |
 | NIO | IO多路复用 |
 | AIO | 异步IO |
-
-<!-- more -->
 
 ## 数据的内核态和用户态
 {% asset_img linux-kernal-user.png 数据的内核态和用户态 %}
