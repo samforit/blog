@@ -51,13 +51,13 @@
   };
 </script>
 
-  <meta name="description" content="遇到的问题通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：    S3文件上传流程  出现问题的地方org.apache.http.client.utils.URIUtils#rewriteURI    阶段 URL    S3生成权限校验签名 http:&#x2F;&#x2F;s3&#x2F;bk&#x2F;sam%28t%29hh.txt   Request请求 htt">
+  <meta name="description" content="遇到的问题通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：">
 <meta name="keywords" content="bug">
 <meta property="og:type" content="article">
 <meta property="og:title" content="【问题梳理】AmazonS3文件名包含英文括号导致401">
 <meta property="og:url" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;bloghe&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;">
 <meta property="og:site_name" content="三木">
-<meta property="og:description" content="遇到的问题通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：    S3文件上传流程  出现问题的地方org.apache.http.client.utils.URIUtils#rewriteURI    阶段 URL    S3生成权限校验签名 http:&#x2F;&#x2F;s3&#x2F;bk&#x2F;sam%28t%29hh.txt   Request请求 htt">
+<meta property="og:description" content="遇到的问题通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;1.png">
 <meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;S3-framework.png">
@@ -71,7 +71,7 @@
 <meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;11.png">
 <meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;12.png">
 <meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;13.png">
-<meta property="og:updated_time" content="2020-04-15T05:10:55.487Z">
+<meta property="og:updated_time" content="2020-04-15T05:20:03.810Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;1.png">
 
@@ -303,11 +303,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <a id="more"></a>
-
-<h1 id="遇到的问题"><a href="#遇到的问题" class="headerlink" title="遇到的问题"></a>遇到的问题</h1><p>通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：</p>
+        <h1 id="遇到的问题"><a href="#遇到的问题" class="headerlink" title="遇到的问题"></a>遇到的问题</h1><p>通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：</p>
 <img src="/blog/2020/04/15/Amazon-S3-401/1.png" class="">
-<!-- more -->
+
+<a id="more"></a>
 
 <h1 id="S3文件上传流程"><a href="#S3文件上传流程" class="headerlink" title="S3文件上传流程"></a>S3文件上传流程</h1><img src="/blog/2020/04/15/Amazon-S3-401/S3-framework.png" class="">
 
