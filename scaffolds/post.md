@@ -4,7 +4,3 @@ categories:
 tags:
 date: {{ date }}
 ---
-
-
-
-<!-- more -->
