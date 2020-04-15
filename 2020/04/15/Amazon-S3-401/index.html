@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="b_0mBmwqCie592u0n7rs3m3-xIrzk4bdTPkxtfkAHk4">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Pisces',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":null},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="遇到的问题通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：    S3文件上传流程  出现问题的地方org.apache.http.client.utils.URIUtils#rewriteURI    阶段 URL    S3生成权限校验签名 http:&#x2F;&#x2F;s3&#x2F;bk&#x2F;sam%28t%29hh.txt   Request请求 htt">
+<meta name="keywords" content="bug">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【问题梳理】AmazonS3文件名包含英文括号导致401">
+<meta property="og:url" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;bloghe&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;">
+<meta property="og:site_name" content="三木">
+<meta property="og:description" content="遇到的问题通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：    S3文件上传流程  出现问题的地方org.apache.http.client.utils.URIUtils#rewriteURI    阶段 URL    S3生成权限校验签名 http:&#x2F;&#x2F;s3&#x2F;bk&#x2F;sam%28t%29hh.txt   Request请求 htt">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;1.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;S3-framework.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;2.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;3.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;5.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;6.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;7.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;8.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;9.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;11.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;12.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;13.png">
+<meta property="og:updated_time" content="2020-04-15T05:10:55.487Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;samforit.github.io&#x2F;blog&#x2F;2020&#x2F;04&#x2F;15&#x2F;Amazon-S3-401&#x2F;1.png">
+
+<link rel="canonical" href="https://samforit.github.io/bloghe/2020/04/15/Amazon-S3-401/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>【问题梳理】AmazonS3文件名包含英文括号导致401 | 三木</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?f5aa3900758b56175a8ff0efb075e4bd";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">三木</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">Sam的一亩三分地</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/blog/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://samforit.github.io/bloghe/blog/2020/04/15/Amazon-S3-401/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/sam_images/avatar.jpg">
+      <meta itemprop="name" content="samforit">
+      <meta itemprop="description" content="我买了一辆自行车，除了铃铛不响，其他周身都在响">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三木">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【问题梳理】AmazonS3文件名包含英文括号导致401
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-15 11:22:58" itemprop="dateCreated datePublished" datetime="2020-04-15T11:22:58+08:00">2020-04-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/S3/" itemprop="url" rel="index">
+                    <span itemprop="name">S3</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span id="/blog/2020/04/15/Amazon-S3-401/" class="post-meta-item leancloud_visitors" data-flag-title="【问题梳理】AmazonS3文件名包含英文括号导致401" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/blog/2020/04/15/Amazon-S3-401/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/blog/2020/04/15/Amazon-S3-401/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <a id="more"></a>
+
+<h1 id="遇到的问题"><a href="#遇到的问题" class="headerlink" title="遇到的问题"></a>遇到的问题</h1><p>通过S3上传文件，如果存储文件名中有英文括号，则S3服务端会返回鉴权失败【401】。出现问题的代码如下所示：</p>
+<img src="/blog/2020/04/15/Amazon-S3-401/1.png" class="">
+<!-- more -->
+
+<h1 id="S3文件上传流程"><a href="#S3文件上传流程" class="headerlink" title="S3文件上传流程"></a>S3文件上传流程</h1><img src="/blog/2020/04/15/Amazon-S3-401/S3-framework.png" class="">
+
+<h1 id="出现问题的地方"><a href="#出现问题的地方" class="headerlink" title="出现问题的地方"></a>出现问题的地方</h1><p>org.apache.http.client.utils.URIUtils#rewriteURI</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S3生成权限校验签名</td>
+<td><code>http://s3/bk/sam%28t%29hh.txt</code></td>
+</tr>
+<tr>
+<td>Request请求</td>
+<td><code>http://s3/bk/sam(t)hh.txt</code></td>
+</tr>
+</tbody></table>
+<p>导致鉴权失败，返回401。</p>
+<h1 id="细节分析"><a href="#细节分析" class="headerlink" title="细节分析"></a>细节分析</h1><h2 id="本来Request中的uri是http-s3-bk-sam-28t-29hh-txt，为什么apache会进行rewrite？"><a href="#本来Request中的uri是http-s3-bk-sam-28t-29hh-txt，为什么apache会进行rewrite？" class="headerlink" title="本来Request中的uri是http://s3/bk/sam%28t%29hh.txt，为什么apache会进行rewrite？"></a>本来Request中的uri是<code>http://s3/bk/sam%28t%29hh.txt</code>，为什么apache会进行rewrite？</h2><img src="/blog/2020/04/15/Amazon-S3-401/2.png" class="">
+<p>rewrite的逻辑如上图所示，主要目的是去除url中的无效路径。<br>同时，我们通过代码可以看出，无论是否有空节点，最终都会执行uribuilder.setPathSegment(pathSegments);<br>在4.5.10中已经解决了这个问题，如果发现并没有进行空节点的remove操作，这里就不会执行uribuilder.setPathSegment(pathSegments);  </p>
+<h2 id="rewrite的具体流程是什么"><a href="#rewrite的具体流程是什么" class="headerlink" title="rewrite的具体流程是什么"></a>rewrite的具体流程是什么</h2><p>可以详细看看【图3】中的setPathSegment干了什么：将encodedPath设置为null;</p>
+<img src="/blog/2020/04/15/Amazon-S3-401/3.png" class="">
+
+<p>在进行【图3】中所示的uribuilder.build操作的时候，如下图所示，会对pathSetment重新进行encodePath。<br>[“bk”,”sam(t)hh.txt”] [“bk”,”sam(t)hh.txt”]<br>本例中，pathSetment包含两个元素 [“bk”,”sam(t)hh.txt”]</p>
+<img src="/blog/2020/04/15/Amazon-S3-401/5.png" class="">
+
+<p>encodePath最终调用的是org.apache.http.client.utils.URLEncodedUtils#urlEncode方法<br>这里就很明显了，如果是在safechars集合中的字符，则不需要进行转码。<br>这里的safechars = PATHSAFE如，PATHSAFE 包含 UNRESERVED<br>根据标准UNRESERVED应该包含英文括号，即英文括号不需要被转码。<br>如下图所示</p>
+<table>
+<thead>
+<tr>
+<th>PATHSAFE</th>
+<th>UNRESERVED</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="/blog/2020/04/15/Amazon-S3-401/6.png" class=""></td>
+<td><img src="/blog/2020/04/15/Amazon-S3-401/7.png" class=""></td>
+</tr>
+<tr>
+<td><img src="/blog/2020/04/15/Amazon-S3-401/8.png" class=""></td>
+<td><img src="/blog/2020/04/15/Amazon-S3-401/9.png" class=""></td>
+</tr>
+</tbody></table>
+<p>所以进行uribuilder.build之后，pathSetment包含的两个元素 [“bk”,”sam(t)hh.txt”]，所有字符都不会被转码，生成的最终uri就成了：<code>http://s3/bk/sam(t)hh.txt</code>。</p>
+<h2 id="S3在创建HttpRequest的时候，英文括号为什么会被转码：http-s3-bk-sam-28t-29hh-txt"><a href="#S3在创建HttpRequest的时候，英文括号为什么会被转码：http-s3-bk-sam-28t-29hh-txt" class="headerlink" title="S3在创建HttpRequest的时候，英文括号为什么会被转码：http://s3/bk/sam%28t%29hh.txt"></a>S3在创建HttpRequest的时候，英文括号为什么会被转码：<code>http://s3/bk/sam%28t%29hh.txt</code></h2><p>S3生成的URI，是经过Java原生的UrlEncoder进行encode的：</p>
+<img src="/blog/2020/04/15/Amazon-S3-401/11.png" class="">
+
+<p>这里不需要转码的集合【dontNeedEncoding】如下所示：</p>
+<img src="/blog/2020/04/15/Amazon-S3-401/12.png" class="">
+
+<p>其中不包含英文括号，所以英文括号也会被转码，导致生成的URI就是：<code>http://s3/bk/sam%28t%29hh.txt</code><br>然后S3-Client认为该URI【<code>http://s3/bk/sam%28t%29hh.txt</code>】就是需要访问的资源，通过该URI生成权限签名Sign-Auth。<br>但是最终Apache-client经过rewrite之后的Uri却是：【<code>http://s3/bk/sam(t)hh.txt</code>】, 所以S3的会报权限异常401【Sign-Auth与真实访问的资源URI不匹配】。</p>
+<h1 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h1><p>这个问题在apache的httpclient 4.5.10版本中已经没有出现了。原因如下：</p>
+<img src="/blog/2020/04/15/Amazon-S3-401/13.png" class="">
+
+<h1 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h1><p>其实这个问题的本质在于：</p>
+<h2 id="S3生成url鉴权的时候，用的Java-UrlEncoder。对英文括号要进行转码。"><a href="#S3生成url鉴权的时候，用的Java-UrlEncoder。对英文括号要进行转码。" class="headerlink" title="S3生成url鉴权的时候，用的Java-UrlEncoder。对英文括号要进行转码。"></a>S3生成url鉴权的时候，用的Java-UrlEncoder。对英文括号要进行转码。</h2><h2 id="底层执行http请求的时候用的-Apache-httpclient，会对uri进行rewrite，不会对英文括号进行转码。"><a href="#底层执行http请求的时候用的-Apache-httpclient，会对uri进行rewrite，不会对英文括号进行转码。" class="headerlink" title="底层执行http请求的时候用的 Apache-httpclient，会对uri进行rewrite，不会对英文括号进行转码。"></a>底层执行http请求的时候用的 Apache-httpclient，会对uri进行rewrite，不会对英文括号进行转码。</h2><p>导致异常。<br>apache 4.5.10以前，不论是否有空节点，都会进行setPathSegments，从而导致重新encode。【对英文括号不转码】<br>apache 4.5.10及以后，如果路径中没有空节点，就不会进行setPathSegments，直接沿用原来的encodePath。</p>
+
+    </div>
+
+    
+    
+    
+      
+        <div class="reward-container">
+  <div>感谢支持!</div>
+  <button disable="enable" onclick="var qr = document.getElementById(&quot;qr&quot;); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/sam_images/weixin.png" alt="samforit 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/sam_images/zhifubao.png" alt="samforit 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/bug/" rel="tag"><i class="fa fa-tag"></i> bug</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/blog/2019/10/12/Java-IO-1/" rel="next" title="Java-IO(上) BIO、NIO、AIO介绍">
+                  <i class="fa fa-chevron-left"></i> Java-IO(上) BIO、NIO、AIO介绍
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    <div class="comments" id="comments"></div>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#遇到的问题"><span class="nav-number">1.</span> <span class="nav-text">遇到的问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#S3文件上传流程"><span class="nav-number">2.</span> <span class="nav-text">S3文件上传流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#出现问题的地方"><span class="nav-number">3.</span> <span class="nav-text">出现问题的地方</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#细节分析"><span class="nav-number">4.</span> <span class="nav-text">细节分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#本来Request中的uri是http-s3-bk-sam-28t-29hh-txt，为什么apache会进行rewrite？"><span class="nav-number">4.1.</span> <span class="nav-text">本来Request中的uri是http://s3/bk/sam%28t%29hh.txt，为什么apache会进行rewrite？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rewrite的具体流程是什么"><span class="nav-number">4.2.</span> <span class="nav-text">rewrite的具体流程是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#S3在创建HttpRequest的时候，英文括号为什么会被转码：http-s3-bk-sam-28t-29hh-txt"><span class="nav-number">4.3.</span> <span class="nav-text">S3在创建HttpRequest的时候，英文括号为什么会被转码：http://s3/bk/sam%28t%29hh.txt</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#解决"><span class="nav-number">5.</span> <span class="nav-text">解决</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#后续"><span class="nav-number">6.</span> <span class="nav-text">后续</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#S3生成url鉴权的时候，用的Java-UrlEncoder。对英文括号要进行转码。"><span class="nav-number">6.1.</span> <span class="nav-text">S3生成url鉴权的时候，用的Java-UrlEncoder。对英文括号要进行转码。</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#底层执行http请求的时候用的-Apache-httpclient，会对uri进行rewrite，不会对英文括号进行转码。"><span class="nav-number">6.2.</span> <span class="nav-text">底层执行http请求的时候用的 Apache-httpclient，会对uri进行rewrite，不会对英文括号进行转码。</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="samforit"
+    src="/blog/sam_images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">samforit</p>
+  <div class="site-description" itemprop="description">我买了一辆自行车，除了铃铛不响，其他周身都在响</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/samforit" title="GitHub &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;samforit" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/blog/mailto:samforit@gmail.com" title="E-Mail &amp;rarr; mailto:samforit@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">samforit</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+<script src="/blog/js/utils.js"></script><script src="/blog/js/motion.js"></script>
+<script src="/blog/js/schemes/pisces.js"></script>
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="/blog/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      flowchart: { curve: 'linear' },
+      gantt: { axisFormat: '%m/%d/%Y' },
+      sequence: { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+  var GUEST = ['nick', 'mail', 'link'];
+  var guest = 'nick,mail,link';
+  guest = guest.split(',').filter(item => {
+    return GUEST.includes(item);
+  });
+  new Valine({
+    el: '#comments',
+    verify: true,
+    notify: true,
+    appId: 'T134pYlQ9NdPFORjFpC7kkCg-gzGzoHsz',
+    appKey: 'KosMb3SnNNxaNir6UaF3fwx2',
+    placeholder: "请留下您宝贵的意见！",
+    avatar: 'mm',
+    meta: guest,
+    pageSize: '10' || 10,
+    visitor: true,
+    lang: 'zh-cn' || 'zh-cn',
+    path: location.pathname,
+    recordIP: false,
+    serverURLs: ''
+  });
+}, window.Valine);
+</script>
+
+</body>
+</html>
